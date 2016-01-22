@@ -14,9 +14,14 @@ typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
 
+/*
+	char toto[]="jaimangeunmelon";   
+	printf("mon melon : %s",toto);
+*/
+
 /*------------------------------------------------------*/
 void renvoi (int sock) {
-
+	
     char buffer[256];
     int longueur;
    
@@ -48,7 +53,7 @@ void renvoi (int sock) {
 
 /*------------------------------------------------------*/
 main(int argc, char **argv) {
-  
+  	
     int 		socket_descriptor, 		/* descripteur de socket */
 			nouv_socket_descriptor, 	/* [nouveau] descripteur de socket */
 			longueur_adresse_courante; 	/* longueur d'adresse courante d'un client */

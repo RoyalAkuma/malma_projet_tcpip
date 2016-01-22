@@ -30,7 +30,8 @@ int main(int argc, char **argv) {
 	perror("usage : client <adresse-serveur> <message-a-transmettre>");
 	exit(1);
     }
-   
+
+	
     prog = argv[0];
     host = argv[1];
     mesg = argv[2];
