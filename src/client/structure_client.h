@@ -13,45 +13,22 @@ typedef struct Config{
 	char* last_room;
 }Config;
 
-#define connection client_connection
-
-#define deconnection client_deconnection
-
-#define connectionRoom client_connectionRoom
-
-#define getListeRoom client_getListeRoom
-
-#define getListeClient client_getListeClient
-
-#define getListeErreur client_getListeErreur
-
-#define whoIs client_whoIs
-
-#define chargerConfig client_chargerConfig
-
-#define saveConfig client_saveConfig
-
 typedef struct Client {
 	char * pseudo;
-	Config config; //Configuration précédente;
-	void (*connection)(char* serveur, int port);
-	void (*deconnection)();
-	void (*connectionRoom)(char* roomName);
-	char * (*getListeRoom)();
-	char * (*getListeClient)();
-	char * (*getListeCommande)();
-	char * (*whoIs)(char* target_name);
-	void (*chargerConfig)();
-	void (*saveConfig)();
-
-	client 	* Client_new(char * pseudo, char * pathConfig) { 
-	  client* c = malloc(sizeof(Client));
-	  p->pseudo = pseudo;
-	  //Construction du config !!
-
-	  return c;
-	}	
+	Config config; //Configuration précédente;	
 }Client;
+
+Client 	* client_create(char * pseudo, char * pathConfig);
+void sendMessage(char * message);
+void client_connection(char* serveur, int port);
+void client_deconnection();
+void client_connectionRoom(char* roomName);
+char * client_getListeRoom();
+char * client_getListeClient();
+char * client_getListeCommande();
+char * client_whoIs(char* target_name);
+void client_chargerConfig();
+void client_saveConfig();
  
 #endif
  
