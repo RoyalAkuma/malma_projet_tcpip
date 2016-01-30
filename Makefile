@@ -23,7 +23,7 @@ SRCDIR_SERVEUR = serveur
 OBJDIR = bin
 TARGETDIR = target
 #LIBS 
-LIBS = -Wl,-rpath=./lib  
+LIBS = -Wl,-rpath=./lib   -lncurses -lpanel -lmenu -lform
 #INCLUDES
 INCLUDES = -L./lib -I./include 
    
@@ -60,7 +60,6 @@ $(EXEC_SERVEUR): $(OBJECTS_SERVEUR)
 	@tput setaf $(GREEN) 
 	@echo "=====Linkage SERVEUR complet!===== : |"$<"|"
 	@tput sgr0
-
 
 %.h:
 	@touch $@

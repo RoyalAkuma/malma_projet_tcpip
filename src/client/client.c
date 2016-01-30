@@ -1,31 +1,189 @@
-/*-----------------------------------------------------------
-Client a lancer apres le serveur avec la commande :
-client <adresse-serveur> <message-a-transmettre>
-------------------------------------------------------------*/
+//-----------------------------------------------------------
+//Client a lancer apres le serveur avec la commande :
+//client <adresse-serveur> <message-a-transmettre>
+//------------------------------------------------------------//
 #include <stdlib.h>
 #include <stdio.h>
 #include <linux/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <string.h>
-
+#include <ncurses.h>
+#include <panel.h>
+#include <menu.h>
+#include <form.h>
 typedef struct sockaddr 	sockaddr;
 typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
+
+void init_wins(WINDOW **wins, int n);
+void win_show(WINDOW *win, char *label, int label_color);
+void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
+
+int main()
+{   
+    int NLINES,NCOLS,rows,cols;
+    WINDOW *my_wins[2];
+    WINDOW *my_form_win;
+    FIELD *field[2];
+    FORM  *my_form;
+    
+
+    int ch;
+
+    /* Initialize curses */
+    initscr();
+    getmaxyx(stdscr,NLINES,NCOLS);
+    start_color();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+
+    /* Initialize all the colors */
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    init_pair(3, COLOR_BLUE, COLOR_BLACK);
+    init_pair(4, COLOR_CYAN, COLOR_BLACK);
+
+    init_wins(my_wins, 2);
+    /* Initialize few color pairs */
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+
+    /* Initialize the fields */
+    field[0] = new_field(5, NCOLS/5*4, 1, 1, 0, 0);
+    
+
+    /* Set field options */
+    set_field_back(field[0], A_UNDERLINE);
+    field_opts_off(field[0], O_AUTOSKIP); /* Don't go to next field when this */
+                          /* Field is filled up         */
+    
+    
+    /* Create the form and post it */
+    my_form = new_form(field);
+    
+    /* Calculate the area required for the form */
+    scale_form(my_form, &rows, &cols);
+
+    /* Create the window to be associated with the form */
+        my_wins[1] = newwin(NLINES/3, NCOLS, NLINES/3*2, 0);
+        keypad(my_wins[1], TRUE);
+
+    /* Set main window and sub window */
+        set_form_win(my_form, my_wins[1]);
+        set_form_sub(my_form, derwin(my_wins[1], rows+2, cols+2, 2, 2));
+
+    /* Print a border around the main window and print a title */
+        box(my_wins[1], 0, 0);
+    print_in_middle(my_wins[1], 1, 5, cols + 6, "JUST WRITE HERE ", COLOR_PAIR(1));
+    
+    post_form(my_form);
+    wrefresh(my_wins[0]);
+    wrefresh(my_wins[1]);
+
+    mvprintw(LINES - 2, 0, "Type your message and press ENTER to send your command or message");
+    refresh();
+    //top = my_panels[1];
+    while((ch = wgetch(my_wins[1])) != KEY_F(2))
+    {   
+        switch(ch)
+        {   
+            case KEY_LEFT:
+                form_driver(my_form,REQ_PREV_CHAR);
+                break;
+
+            case KEY_RIGHT:
+                form_driver(my_form,REQ_NEXT_CHAR);
+                break;
+            case KEY_DC:
+                form_driver(my_form,REQ_DEL_CHAR);
+                break;
+            case KEY_ENTER:
+                //SEND MY MESSAGE HERE !!
+                break;
+            case KEY_BACKSPACE:
+                form_driver(my_form,REQ_PREV_CHAR);
+                form_driver(my_form,REQ_DEL_CHAR);
+                break;
+            default:
+                /* If this is a normal character, it gets */
+                /* Printed                */    
+                form_driver(my_form, ch);
+                break;
+            
+
+        }
+    }
+    endwin();
+    return 0;
+}
+
+/* Put all the windows */
+void init_wins(WINDOW **wins,int n)
+{   int x, y, i;
+    int NLINES,NCOLS;
+    getmaxyx(stdscr,NLINES,NCOLS);
+    char label[80];
+    wins[0] = newwin(NLINES/3 * 2, NCOLS, 0, 0);
+    sprintf(label, "--- Messages ---");
+    win_show(wins[0], label, 1);
+}
+
+/* Show the window with a border and a label */
+void win_show(WINDOW *win, char *label, int label_color)
+{   int startx, starty, height, width;
+    getbegyx(win, starty, startx);
+    getmaxyx(win, height, width);
+    box(win, 0, 0);
+    mvwaddch(win, 2, 0, ACS_LTEE); 
+    mvwhline(win, 2, 1, ACS_HLINE, width - 2); 
+    mvwaddch(win, 2, width - 1, ACS_RTEE); 
+    print_in_middle(win, 1, 0, width, label, COLOR_PAIR(label_color));
+}
+
+void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color)
+{   int length, x, y;
+    float temp;
+
+    if(win == NULL)
+        win = stdscr;
+    getyx(win, y, x);
+    if(startx != 0)
+        x = startx;
+    if(starty != 0)
+        y = starty;
+    if(width == 0)
+        width = 80;
+
+    length = strlen(string);
+    temp = (width - length)/ 2;
+    x = startx + (int)temp;
+    wattron(win, color);
+    mvwprintw(win, y, x, "%s", string);
+    wattroff(win, color);
+    refresh();
+}
+ /*
+
 int main(int argc, char **argv) {
-  
-    int 	socket_descriptor, 	/* descripteur de socket */
-		longueur; 		/* longueur d'un buffer utilisé */
-    sockaddr_in adresse_locale; 	/* adresse de socket local */
-    hostent *	ptr_host; 		/* info sur une machine hote */
-    servent *	ptr_service; 		/* info sur service */
+    
+
+
+   
+    int 	socket_descriptor, 	// descripteur de socket //
+		longueur; 		// longueur d'un buffer utilisé //
+    sockaddr_in adresse_locale; 	// adresse de socket local //
+    hostent *	ptr_host; 		// info sur une machine hote //
+    servent *	ptr_service; 		// info sur service //
     char 	buffer[256];
-    char *	prog; 			/* nom du programme */
-    char *	host; 			/* nom de la machine distante */
-    char *	mesg; 			/* message envoyé */
+    char *	prog; 			// nom du programme //
+    char *	host; 			// nom de la machine distante //
+    char *	mesg; 			// message envoyé //
      
+
+
     if (argc != 3) {
 	perror("usage : client <adresse-serveur> <message-a-transmettre>");
 	exit(1);
@@ -45,38 +203,38 @@ int main(int argc, char **argv) {
 	exit(1);
     }
     
-    /* copie caractere par caractere des infos de ptr_host vers adresse_locale */
+    // copie caractere par caractere des infos de ptr_host vers adresse_locale //
     bcopy((char*)ptr_host->h_addr, (char*)&adresse_locale.sin_addr, ptr_host->h_length);
-    adresse_locale.sin_family = AF_INET; /* ou ptr_host->h_addrtype; */
+    adresse_locale.sin_family = AF_INET; // ou ptr_host->h_addrtype; //
     
-    /* 2 facons de definir le service que l'on va utiliser a distance */
-    /* (commenter l'une ou l'autre des solutions) */
+    // 2 facons de definir le service que l'on va utiliser a distance //
+    // (commenter l'une ou l'autre des solutions) //
     
-    /*-----------------------------------------------------------*/
-    /* SOLUTION 1 : utiliser un service existant, par ex. "irc" */
-    /*
+    //-----------------------------------------------------------//
+    // SOLUTION 1 : utiliser un service existant, par ex. "irc" //
+    //
     if ((ptr_service = getservbyname("irc","tcp")) == NULL) {
 	perror("erreur : impossible de recuperer le numero de port du service desire.");
 	exit(1);
     }
     adresse_locale.sin_port = htons(ptr_service->s_port);
-    */
-    /*-----------------------------------------------------------*/
     
-    /*-----------------------------------------------------------*/
-    /* SOLUTION 2 : utiliser un nouveau numero de port */
+    //-----------------------------------------------------------//
+    
+    //-----------------------------------------------------------//
+    // SOLUTION 2 : utiliser un nouveau numero de port //
     adresse_locale.sin_port = htons(5000);
-    /*-----------------------------------------------------------*/
+    //-----------------------------------------------------------//
     
     printf("numero de port pour la connexion au serveur : %d \n", ntohs(adresse_locale.sin_port));
     
-    /* creation de la socket */
+    // creation de la socket //
     if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	perror("erreur : impossible de creer la socket de connexion avec le serveur.");
 	exit(1);
     }
     
-    /* tentative de connexion au serveur dont les infos sont dans adresse_locale */
+    // tentative de connexion au serveur dont les infos sont dans adresse_locale //
     if ((connect(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
 	perror("erreur : impossible de se connecter au serveur.");
 	exit(1);
@@ -86,18 +244,18 @@ int main(int argc, char **argv) {
     
     printf("envoi d'un message au serveur. \n");
       
-    /* envoi du message vers le serveur */
+    // envoi du message vers le serveur //
     if ((write(socket_descriptor, mesg, strlen(mesg))) < 0) {
 	perror("erreur : impossible d'ecrire le message destine au serveur.");
 	exit(1);
     }
     
-    /* mise en attente du prgramme pour simuler un delai de transmission */
+    // mise en attente du prgramme pour simuler un delai de transmission //
     sleep(3);
      
     printf("message envoye au serveur. \n");
                 
-    /* lecture de la reponse en provenance du serveur */
+    // lecture de la reponse en provenance du serveur //
     while((longueur = read(socket_descriptor, buffer, sizeof(buffer))) > 0) {
 	printf("reponse du serveur : \n");
 	write(1,buffer,longueur);
@@ -110,5 +268,9 @@ int main(int argc, char **argv) {
     printf("connexion avec le serveur fermee, fin du programme.\n");
     
     exit(0);
+
+    
     
 }
+
+*/

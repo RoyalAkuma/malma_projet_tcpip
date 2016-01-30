@@ -2,7 +2,7 @@
 
 Client 	* client_create(char * pseudo, char * pathConfig) { 
   Client * c = malloc(sizeof(Client));
-  c->client->pseudo = pseudo;
+  c->pseudo = pseudo;
   //Construction du config !!
   return c;
 }
