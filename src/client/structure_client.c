@@ -7,7 +7,11 @@ Client 	* client_create(char * pseudo, char * pathConfig) {
   return c;
 }
 
+int sendMessage(char * message){
 
+	// 0 is well processing
+	return 0;
+}
 void client_connection(char* server_name, int server_port){
 	//ConnectionServeur
 	printf("Connection to %s  Port:%d",server_name,server_port);

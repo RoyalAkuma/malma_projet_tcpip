@@ -13,6 +13,7 @@
 #include <menu.h>
 #include <form.h>
 #include "client.h"
+#include "structure_client.h"
 #include <time.h>
 typedef struct sockaddr 	sockaddr;
 typedef struct sockaddr_in 	sockaddr_in;
@@ -37,13 +38,13 @@ int main()
     getmaxyx(stdscr,NLINES,NCOLS);
 
     WINDOW *my_wins[2];
-    FIELD *m_fields[NFIELDS];
+    FIELD *m_fields[20];
     FIELD *field[2];
     FORM  *my_form;
     FORM *m_form;
     
     messages_liste * liste_m =  malloc((1) * sizeof(messages_liste));
-    liste_m->max = NLINES/3*2;
+    liste_m->max = 19;
     liste_m->used = 0;
 
     int ch;
@@ -116,8 +117,10 @@ int main()
 
     char * dest = malloc(20 * sizeof(char)) ;
     char * message = malloc(NCOLS/5*4 * sizeof(char));
+    char * tmp_message = malloc(NCOLS/5*4 * sizeof(char));
     while((ch = wgetch(my_wins[1])) != KEY_ENTER)
     {   
+        check_message_field(m_form,m_fields,liste_m,liste_m->used,NCOLS/5*4);
         switch(ch)
         {   
             case KEY_LEFT:
@@ -133,21 +136,41 @@ int main()
             case '\n':
             case 0x127:
             case KEY_ENTER:
-                check_message_field(m_form,m_fields,liste_m,liste_m->used);
+                
                 //SEND MY MESSAGE HERE !!
                 //form_driver(m_form,REQ_INS_MODE);
-                
                 if (form_driver(my_form, REQ_VALIDATION) == E_OK) {
                     char * myTime = getMyTime();
                     dest = concat("[",concat(myTime,"]"));
-                    message = concat(dest,field_buffer(field[0],0));
-                    set_field_buffer(m_fields[liste_m->used], 0, message );
+                    message = concat(dest,field_buffer(field[0],0));       
+                    int error = sendMessage(message);
+                    if(error == 0){
+                        if(liste_m->used == liste_m->max-2){
+                            for(i=1;i<liste_m->max-1;i++){
+                                mvprintw(i,4,"time");
+                                if (form_driver(m_form, REQ_VALIDATION) == E_OK) {
+                                    tmp_message = field_buffer(m_fields[i],0);
+                                    set_field_buffer(m_fields[i-1], 0, tmp_message);
+                                    set_field_buffer(m_fields[i], 0, "");
+                                }            
+                            }
+                            liste_m->used-=1;
+                        }else{
+                            set_field_buffer(m_fields[liste_m->used], 0, message );
+                            form_driver(my_form,REQ_DEL_LINE);
+                            liste_m->used++;
+                        }
+                        
+                    }else{
+                        set_field_buffer(m_fields[liste_m->used], 0, "A NETWORK PROBLEM APPEARED" );
+                        liste_m->used++;
+                    }
+                    //form_driver(m_form,ch);
+                        
+                    //set_field_userptr(field[0],0);
+                    //form_driver(my_form,REQ_PREV_FIELD);
                 }
-                //form_driver(m_form,ch);
-                liste_m->used++;
-                //set_field_userptr(field[0],0);
-                form_driver(my_form,REQ_DEL_LINE);
-                //form_driver(my_form,REQ_PREV_FIELD);
+                
                 refresh();
 
                 break;
@@ -187,7 +210,7 @@ int main()
 char * getMyTime(){
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    char * myTime = malloc(15 * sizeof(char));// = concat(hour,concat(":",concat(min,concat(":",sec))));
+    char * myTime = malloc(20 * sizeof(char));// = concat(hour,concat(":",concat(min,concat(":",sec))));
     sprintf (myTime, "%dH:%dM:%dS", tm.tm_hour, tm.tm_min, tm.tm_sec);    
     return myTime;
 }
@@ -241,12 +264,12 @@ void print_in_middle(WINDOW *win, int starty, int startx, int width, char *strin
     refresh();
 }
 
-void check_message_field(FORM * my_form,FIELD * field,messages_liste * liste,int using){
-    if(liste->max == using++){
+void check_message_field(FORM * my_form,FIELD * field,messages_liste * liste,int using,int msg){
+    if(liste->max-2 == using){
+        char * message = malloc(msg * sizeof(char));
         // LOCK ALL FIELDS TO ACQUIRE DATA 
         int i= 1;
-        char * message;
-        for(i;i<using-1;i++){
+        for(i;i<liste->max;i++){
             if (form_driver(my_form, REQ_VALIDATION) == E_OK) {
                 message = field_buffer(&field[i],0);
                 set_field_buffer(&field[i-1], 0, message );
@@ -254,10 +277,9 @@ void check_message_field(FORM * my_form,FIELD * field,messages_liste * liste,int
         }
         message = field_buffer(&field[i],0);
         set_field_buffer(&field[i+1], 0, message );
+        liste->used = using-1;
 
-    }/*else if( liste->used < using){
-        exit(0);//PROBLEM;
-    }*/else{
+    }else{
         //NOTHING TO DO
     }
 }

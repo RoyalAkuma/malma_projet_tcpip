@@ -19,7 +19,7 @@ typedef struct Client {
 }Client;
 
 Client 	* client_create(char * pseudo, char * pathConfig);
-void sendMessage(char * message);
+int sendMessage(char * message);
 void client_connection(char* serveur, int port);
 void client_deconnection();
 void client_connectionRoom(char* roomName);
