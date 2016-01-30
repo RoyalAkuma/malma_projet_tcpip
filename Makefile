@@ -15,7 +15,7 @@ CXX = gcc
 EXEC_CLIENT = chatroom
 EXEC_SERVEUR = chatserv
 DEBUG =
-CXXFLAGS = -g
+CXXFLAGS = -g 
 #SOURCES OBJECTS
 SRCDIR = src
 SRCDIR_CLIENT = client

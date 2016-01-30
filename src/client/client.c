@@ -12,30 +12,43 @@
 #include <panel.h>
 #include <menu.h>
 #include <form.h>
+#include "client.h"
+#include <time.h>
 typedef struct sockaddr 	sockaddr;
 typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
 
-void init_wins(WINDOW **wins, int n);
-void win_show(WINDOW *win, char *label, int label_color);
-void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
+
+
+#define NFIELDS 20
+typedef struct messages_liste{
+    int max;    
+    int used;
+}messages_liste;
 
 int main()
 {   
-    int NLINES,NCOLS,rows,cols;
-    WINDOW *my_wins[2];
-    WINDOW *my_form_win;
-    FIELD *field[2];
-    FORM  *my_form;
-    
 
-    int ch;
-
+    int NLINES,NCOLS,rows,cols,m_rows,m_cols;
     /* Initialize curses */
     initscr();
     getmaxyx(stdscr,NLINES,NCOLS);
+
+    WINDOW *my_wins[2];
+    FIELD *m_fields[NFIELDS];
+    FIELD *field[2];
+    FORM  *my_form;
+    FORM *m_form;
+    
+    messages_liste * liste_m =  malloc((1) * sizeof(messages_liste));
+    liste_m->max = NLINES/3*2;
+    liste_m->used = 0;
+
+    int ch;
+
+    
     start_color();
     cbreak();
     noecho();
@@ -47,13 +60,20 @@ int main()
     init_pair(3, COLOR_BLUE, COLOR_BLACK);
     init_pair(4, COLOR_CYAN, COLOR_BLACK);
 
-    init_wins(my_wins, 2);
-    /* Initialize few color pairs */
-    init_pair(1, COLOR_RED, COLOR_BLACK);
 
-    /* Initialize the fields */
-    field[0] = new_field(5, NCOLS/5*4, 1, 1, 0, 0);
     
+    /* Initialize the fields */
+    field[0] = new_field(1, NCOLS/5*4-20, 1, 1, 0, 0);
+    int i=0;
+    for(i = 0; i < NFIELDS; ++i){
+        m_fields[i] = new_field(1, NCOLS/5*4, 1+i, 1, 2, 2);
+        //set_field_buffer(m_fields[i], 0, "This is a static Field");
+        //set_field_buffer(m_fields[i], 0, "totototototo");
+        //set_field_back(m_fields[i], A_UNDERLINE);
+        field_opts_off(m_fields[i], O_AUTOSKIP);
+        field_opts_off(m_fields[i], O_STATIC); /* Don't go to next field when this */
+                          /* Field is filled up         */
+    }
 
     /* Set field options */
     set_field_back(field[0], A_UNDERLINE);
@@ -63,30 +83,40 @@ int main()
     
     /* Create the form and post it */
     my_form = new_form(field);
-    
-    /* Calculate the area required for the form */
     scale_form(my_form, &rows, &cols);
-
-    /* Create the window to be associated with the form */
-        my_wins[1] = newwin(NLINES/3, NCOLS, NLINES/3*2, 0);
-        keypad(my_wins[1], TRUE);
-
+    my_wins[1] = newwin(NLINES/3, NCOLS, NLINES/3*2, 0);
+    keypad(my_wins[1], TRUE);
     /* Set main window and sub window */
-        set_form_win(my_form, my_wins[1]);
-        set_form_sub(my_form, derwin(my_wins[1], rows+2, cols+2, 2, 2));
-
-    /* Print a border around the main window and print a title */
-        box(my_wins[1], 0, 0);
-    print_in_middle(my_wins[1], 1, 5, cols + 6, "JUST WRITE HERE ", COLOR_PAIR(1));
-    
-    post_form(my_form);
-    wrefresh(my_wins[0]);
+    set_form_win(my_form, my_wins[1]);
+    set_form_sub(my_form, derwin(my_wins[1], rows, cols, 2, 2));
+    box(my_wins[1], 0, 0);
+    print_in_middle(my_wins[1], 0, 0, cols, "JUST WRITE HERE ", COLOR_PAIR(1));
+    post_form(my_form);    
     wrefresh(my_wins[1]);
+    refresh();
 
-    mvprintw(LINES - 2, 0, "Type your message and press ENTER to send your command or message");
+
+    m_form = new_form(m_fields);
+    /* Calculate the area required for the form */
+    scale_form(m_form, &m_rows, &m_cols);
+    /* Create the window to be associated with the form */
+    my_wins[0] = newwin(NLINES/3*2, NCOLS, 0, 0);
+    keypad(my_wins[0], TRUE);
+    set_form_win(m_form, my_wins[0]);
+    set_form_sub(m_form, derwin(my_wins[0], m_rows+2, m_cols+2, 2, 2));
+    /* Print a border around the main window and print a title */
+    box(my_wins[0], 0, 0);    
+    print_in_middle(my_wins[0], 0, 0, m_cols, "MESSAGES[IN/OUT] HERE ", COLOR_PAIR(2));
+    post_form(m_form);
+    wrefresh(my_wins[0]);
+
+    mvprintw(LINES - 2, 2, "[USE IN FULL SCREEN] Type your message and press ENTER to send your command or message");
     refresh();
     //top = my_panels[1];
-    while((ch = wgetch(my_wins[1])) != KEY_F(2))
+
+    char * dest = malloc(20 * sizeof(char)) ;
+    char * message = malloc(NCOLS/5*4 * sizeof(char));
+    while((ch = wgetch(my_wins[1])) != KEY_ENTER)
     {   
         switch(ch)
         {   
@@ -100,8 +130,26 @@ int main()
             case KEY_DC:
                 form_driver(my_form,REQ_DEL_CHAR);
                 break;
+            case '\n':
+            case 0x127:
             case KEY_ENTER:
+                check_message_field(m_form,m_fields,liste_m,liste_m->used);
                 //SEND MY MESSAGE HERE !!
+                //form_driver(m_form,REQ_INS_MODE);
+                
+                if (form_driver(my_form, REQ_VALIDATION) == E_OK) {
+                    char * myTime = getMyTime();
+                    dest = concat("[",concat(myTime,"]"));
+                    message = concat(dest,field_buffer(field[0],0));
+                    set_field_buffer(m_fields[liste_m->used], 0, message );
+                }
+                //form_driver(m_form,ch);
+                liste_m->used++;
+                //set_field_userptr(field[0],0);
+                form_driver(my_form,REQ_DEL_LINE);
+                //form_driver(my_form,REQ_PREV_FIELD);
+                refresh();
+
                 break;
             case KEY_BACKSPACE:
                 form_driver(my_form,REQ_PREV_CHAR);
@@ -109,26 +157,53 @@ int main()
                 break;
             default:
                 /* If this is a normal character, it gets */
-                /* Printed                */    
+                /* Printed     
+                           */
+                set_field_buffer(m_fields[0], 0, field_buffer(field[0],1) );
                 form_driver(my_form, ch);
                 break;
             
 
         }
+        wrefresh(my_wins[0]);
+        //refresh(my_wins[1]);
+        refresh();
+    }
+
+    /* Un post form and free the memory */
+    unpost_form(my_form);
+    unpost_form(m_form);
+    free_form(my_form);
+    free_form(m_form);
+    free_field(field[0]);
+    free_field(field[1]); 
+    for(i=0;i<NFIELDS;++i){
+        free_field(m_fields[i]);
     }
     endwin();
     return 0;
 }
 
-/* Put all the windows */
-void init_wins(WINDOW **wins,int n)
-{   int x, y, i;
-    int NLINES,NCOLS;
-    getmaxyx(stdscr,NLINES,NCOLS);
-    char label[80];
-    wins[0] = newwin(NLINES/3 * 2, NCOLS, 0, 0);
-    sprintf(label, "--- Messages ---");
-    win_show(wins[0], label, 1);
+char * getMyTime(){
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char * myTime = malloc(15 * sizeof(char));// = concat(hour,concat(":",concat(min,concat(":",sec))));
+    sprintf (myTime, "%dH:%dM:%dS", tm.tm_hour, tm.tm_min, tm.tm_sec);    
+    return myTime;
+}
+
+char * concat(char * dest,char* src){
+    char *buffer = malloc (strlen (dest) + strlen (src));
+    if (buffer == NULL) {
+        // Out of memory.
+        return "";
+    } else {
+        strcpy (buffer, dest);
+        strcat (buffer, src);
+        return buffer;
+        // Do something with buffer.
+    }
+    
 }
 
 /* Show the window with a border and a label */
@@ -164,6 +239,27 @@ void print_in_middle(WINDOW *win, int starty, int startx, int width, char *strin
     mvwprintw(win, y, x, "%s", string);
     wattroff(win, color);
     refresh();
+}
+
+void check_message_field(FORM * my_form,FIELD * field,messages_liste * liste,int using){
+    if(liste->max == using++){
+        // LOCK ALL FIELDS TO ACQUIRE DATA 
+        int i= 1;
+        char * message;
+        for(i;i<using-1;i++){
+            if (form_driver(my_form, REQ_VALIDATION) == E_OK) {
+                message = field_buffer(&field[i],0);
+                set_field_buffer(&field[i-1], 0, message );
+            }            
+        }
+        message = field_buffer(&field[i],0);
+        set_field_buffer(&field[i+1], 0, message );
+
+    }/*else if( liste->used < using){
+        exit(0);//PROBLEM;
+    }*/else{
+        //NOTHING TO DO
+    }
 }
  /*
 
