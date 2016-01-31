@@ -1,0 +1,148 @@
+\documentclass[a4paper 14pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
+\usepackage{graphicx}
+\title{Cahier des charges, projet Reseau - M1 ALMA}
+\author{Joachim CLAYTON, Arnaud GRALL}
+
+
+
+
+\begin{document}
+
+\maketitle
+\date
+
+\begin{figure}[h!]
+   \includegraphics[width=350pt]{source/0.jpeg}
+\end{figure}
+
+
+\newpage
+\renewcommand{\contentsname}{Sommaire} 
+\tableofcontents
+\newpage
+
+
+\section{Introduction}
+
+
+
+\subsection{Notre Groupe}
+
+Nous sommes deux étudiants en premiere année du Master ALMA :
+Arnaud Grall et Joachim Clayton.
+
+
+\subsection{Problématique}
+
+La problématique du projet est de réaliser une application qui utiliserait les échanges de données entre plusieurs terminaux.\\
+Nous avons pour cela décider de créer un chat sur le model ''irc'' qui permetterai l'échange entre plusieurs clients grâce à un server distant.
+De plus, cette application doit permettre de valider l'enseignement réalisé en module de Réseau et donc convenir à certaines normes et protocoles que nous choisirons.\\
+Les choix de ces protocoles seront également détaillés et expliqués afin de valider la conception de notre logiciel.\\
+Les spécifications de notre projet seront expliqués dans les parties suivantes.
+
+
+\newpage
+
+
+\section{Premiere Partie : Détails de l'application}
+
+Cette partie décrit le rendu final attendu de notre application.
+
+\subsection{Architecture de l'application}
+
+L'application devra avoir pour architecture : 
+
+\begin{enumerate}
+	\item Un serveur central et distant ( c'est à dire que le serveur est détaché )
+	\item Plusieurs ou une interface clients ( chaque client représente un hôte du réseau )
+\end{enumerate}
+
+\begin{figure}[h]
+   \includegraphics[width=350pt]{source/1.png}
+	\caption{Schéma intuitif architecture du chat.}
+\end{figure}
+
+\newpage
+
+\subsection{UML}
+
+Voici un schéma récapitulatif UML du logiciel :
+
+%faut que tu mettes le schéma uml dans source et tu met le nom fichier à la place de 1.png ici :D
+\begin{figure}[h]
+   \includegraphics[width=350pt]{source/1.png}
+	\caption{Schéma UML}
+\end{figure}
+
+\subsection{interface}
+
+Notre projet dans un premier temps devra pouvoir fonctionner grâces à des terminaux.
+Chaque terminaux lancé sera soit serveur (il n'y en aura qu'un) ou soit clients (il pourra y en avoir plusieurs différents).
+
+\subsection{Choix des technologies}
+
+Cette partie regroupe les différentes technologies que nous utiliserons.
+
+\subsubsection{ncurses}
+
+Premettant le rafraichissement des terminaux ??
+% complette ça stp :D
+
+\newpage
+\subsubsection{protocole tcp/ip}
+
+Afin de réaliser le transfert de donnée et des messages, nous avons décidé d'utiliser le protocol tcp/ip.
+
+Ce protocole permet l'envoie des messages grâces aux adresses ip unique de chaque utilisateur. Il permet la viabilité des informations transmisent d'un terminal à un autre. Il permet aussi de vérifier si les données ont bien été transmise, entre autre :
+
+TCP permet de :
+\begin{enumerate}
+	\item ,comme UDP, permet la gestion des ports.
+	\item vérifier la capacité du destinataire à recevoir des données.
+	\item segmenter les gros paquets de données en paquets plus petits pour que IP les accepte.
+	\item numéroter les paquets, et à la réception de vérifier qu'ils sont tous bien arrivés.
+	\item redemander les paquets manquants et de les réassembler avant de les donner aux logiciels.Des accusés de réception sont envoyés pour prévenir l'expéditeur que les données sont bien arrivées.
+\end{enumerate}
+
+
+\newpage
+\section{Deuxieme Partie : Fonctionalités bonus}
+
+Dans le cas ou notre application repondrait à nos attentes premieres, nous pensions travailler afin de développer ces fonctionalités bonus :
+
+\subsection{Le transfert de Fichier}
+
+Dans le cas du transfert de Fichier, nous pensions réaliser un transfert de fichier entre utilisateurs, toujours sur la base de tcp/ip, grâce ftp.
+
+\subsubsection{FTP}
+
+File Transfert Protocole est un protocole de communication destiné à l'echange de fichiers sur un réseau TCP/IP.
+Il permet de copier un ou plusieurs fichier d'un terminal à un autre du réseau.
+Il obéit à un model  Client-Serveur. 
+
+\subsection{L'interface graphique}
+
+\begin{figure}[h]
+   \includegraphics[width=350pt]{source/2.png}
+	\caption{Schéma de l'interface graphique}
+\end{figure}
+
+\newpage
+\subsection{Message privé, message de groupe}
+
+Nous pensions develloper des options qui permetterai l'envois de message à une personne en particulier ou à des groupes de personnes en particulier.
+
+\subsection{Administrateur}
+
+Cette fonctionalité permettrait l'emergence des clients administrateur qui se demarquerait du client.
+Il aurait la possibilité d'avoir plus de commandes et de privilège qu'un client lambda.
+
+
+\section{Conclusion}
+
+
+
+\end{document}
